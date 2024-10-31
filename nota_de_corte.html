@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Corte</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .select {
+            padding: 12px;
+            font-size: 16px;
+            margin: 0 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            color: #333;
+        }
+        .button {
+            padding: 12px 25px;
+            background-color: #66cc66;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #55bb55;
+        }
+        .result-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .result-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 10px;
+            width: 80%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+        .highlight {
+            background-color: #ffcccc;
+        }
+        .error-message {
+            color: #ff4c4c;
+            text-align: center;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Nota de Corte</h1>
+
+    <div class="search-container">
+        <select id="course" class="select">
+            <option value="">Selecione o Curso</option>
+            <option value="ADMINISTRAÇÃO">ADMINISTRAÇÃO</option>
+            <option value="ARQUITETURA E URBANISMO">ARQUITETURA E URBANISMO</option>
+            <option value="BIOMEDICINA">BIOMEDICINA</option>
+            <option value="DIREITO">DIREITO</option>
+            <option value="ENFERMAGEM">ENFERMAGEM</option>
+            <option value="EDUCAÇÃO FÍSICA">EDUCAÇÃO FÍSICA</option>
+            <option value="ENGENHARIA CIVIL">ENGENHARIA CIVIL</option>
+            <option value="ENGENHARIA DE PRODUÇÃO">ENGENHARIA DE PRODUÇÃO</option>
+            <option value="FARMÁCIA">FARMÁCIA</option>
+            <option value="FISIOTERAPIA">FISIOTERAPIA</option>
+            <option value="FONOAUDIOLOGIA">FONOAUDIOLOGIA</option>
+            <option value="GASTRONOMIA">GASTRONOMIA</option>
+            <option value="JORNALISMO">JORNALISMO</option>
+            <option value="MEDICINA">MEDICINA</option>
+            <option value="MEDICINA VETERINÁRIA">MEDICINA VETERINÁRIA</option>
+            <option value="NUTRIÇÃO">NUTRIÇÃO</option>
+            <option value="ODONTOLOGIA">ODONTOLOGIA</option>
+            <option value="PEDAGOGIA">PEDAGOGIA</option>
+            <option value="PSICOLOGIA">PSICOLOGIA</option>
+            <option value="SERVIÇO SOCIAL">SERVIÇO SOCIAL</option>
+        </select>
+
+        <button class="button" onclick="searchData()">Buscar</button>
+        <button class="button" onclick="clearData()">Limpar</button>
+        <button class="button" onclick="showAll()">TODOS</button>
+        <button class="button" onclick="goBack()">Voltar ao Menu</button>
+    </div>
+
+    <div id="error" class="error-message"></div>
+
+    <div id="result" class="result-container"></div>
+
+    <script>
+        const apiKey = 'AIzaSyCpfGDekqRqfeY7PTy9OcpJ6P9uX2lJla8';
+        const sheetId = '1bnsHV-TKCuZIVne1POEwFHCWvbDVr1oL-B2Z-VM6KMc';
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/NOTA DE CORTE?key=${apiKey}`;
+        let allData = [];
+
+        // Função para carregar todos os dados ao abrir a página
+        window.onload = function() {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    allData = data.values || [];
+                    displayResults(allData.slice(1)); // Ignora o cabeçalho
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar dados:', error);
+                    document.getElementById('error').textContent = "Erro ao carregar os dados. Tente novamente mais tarde.";
+                });
+        };
+
+        function displayResults(data) {
+            const resultContainer = document.getElementById('result');
+            resultContainer.innerHTML = '';
+
+            if (data.length === 0) {
+                resultContainer.innerHTML = "<p>Nenhum dado encontrado.</p>";
+                return;
+            }
+
+            data.forEach(row => {
+                const [id, course, turn, grade, semester] = row;
+                const highlightClass = turn.includes("SEM OFERTA") ? 'highlight' : '';
+
+                resultContainer.innerHTML += `
+                    <div class="result-box ${highlightClass}">
+                        <p><strong>Curso:</strong> ${course}</p>
+                        <p><strong>Turno:</strong> ${turn}</p>
+                        <p><strong>Nota:</strong> ${grade}</p>
+                        <p><strong>Semestre de Referência:</strong> ${semester}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function searchData() {
+            const course = document.getElementById('course').value.trim();
+
+            const filteredData = allData.filter(row => {
+                const rowCourse = row[1]; // Índice do curso
+                const hasNoOffer = row[2] && row[2].includes("SEM OFERTA"); // Verifica "SEM OFERTA"
+
+                // Filtra apenas os dados válidos com base na seleção
+                return course ? rowCourse === course : true;
+            });
+
+            displayResults(filteredData);
+        }
+
+        function clearData() {
+            document.getElementById('course').value = '';
+            displayResults(allData.slice(1)); // Exibe todos os dados
+            document.getElementById('error').textContent = '';
+        }
+
+        function showAll() {
+            displayResults(allData.slice(1)); // Exibe todos os dados
+        }
+
+        function goBack() {
+            window.location.href = 'PESQUISA HOME.html';
+        }
+    </script>
+
+</body>
+</html>

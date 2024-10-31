@@ -42,7 +42,7 @@
             border-color: #66cc66;
             outline: none;
         }
-        .search-button, .clear-button, .back-button {
+        .search-button {
             padding: 12px 25px;
             background-color: #66cc66;
             color: white;
@@ -51,9 +51,8 @@
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s;
-            margin: 5px;
         }
-        .search-button:hover, .clear-button:hover, .back-button:hover {
+        .search-button:hover {
             background-color: #55bb55;
         }
         .result-container {
@@ -101,10 +100,18 @@
     <div class="search-container">
         <input type="text" id="name" class="search-input" placeholder="Nome">
         <input type="text" id="cpf" class="search-input" placeholder="000.000.000-00" maxlength="14" oninput="formatCPF(this)">
-        
+
+<script>
+    function formatCPF(input) {
+        let value = input.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+        value = value.replace(/(\d{3})(\d)/, '$1.$2'); // Adiciona o primeiro ponto
+        value = value.replace(/(\d{3})(\d)/, '$1.$2'); // Adiciona o segundo ponto
+        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2'); // Adiciona o traço
+        input.value = value;
+    }
+</script>
+
         <button class="search-button" onclick="searchData()">Buscar</button>
-        <button class="clear-button" onclick="clearSearch()">Limpar</button>
-        <button class="back-button" onclick="window.location.href='PESQUISA HOME.html'">Voltar ao Menu</button>
     </div>
 
     <div id="error" class="error-message"></div>
@@ -117,14 +124,6 @@
         const apiKey = 'AIzaSyCpfGDekqRqfeY7PTy9OcpJ6P9uX2lJla8';
         const sheetId = '1FkhYLzqPSDU-8R6YCC70XqyEu_irZxPrqmUMAkgwExg';
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/BANCO DE DADOS?key=${apiKey}`;
-
-        function formatCPF(input) {
-            let value = input.value.replace(/\D/g, ''); // Remove caracteres não numéricos
-            value = value.replace(/(\d{3})(\d)/, '$1.$2'); // Adiciona o primeiro ponto
-            value = value.replace(/(\d{3})(\d)/, '$1.$2'); // Adiciona o segundo ponto
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2'); // Adiciona o traço
-            input.value = value;
-        }
 
         function searchData() {
             const name = document.getElementById('name').value.trim().toLowerCase();
@@ -158,13 +157,14 @@
                                 ies: row[18],
                                 curso: row[0],
                                 statusFinanciamento: row[7],
-                                turno: row[1],
+                                turno: row[1], // Data Limite CPSA
                                 notaENEM: row[4],
                                 modalidade: row[17],
                                 tipoFIES: row[19],
                                 preSelecionado: row[7] === 'Pré-Selecionado',
-                                statusAtual: row[8],
-                                dataLimiteCPSA: row[11]
+                                statusAtual: row[8], // Status Atual do Financiamento
+                                dataLimiteCPSA: row[11] // Data Limite CPSA
+
                             });
                         }
                     }
@@ -201,13 +201,6 @@
                     console.error('Erro ao carregar dados:', error);
                     errorDiv.textContent = "Erro ao carregar os dados. Tente novamente mais tarde.";
                 });
-        }
-
-        function clearSearch() {
-            document.getElementById('name').value = '';
-            document.getElementById('cpf').value = '';
-            document.getElementById('result').innerHTML = '';
-            document.getElementById('error').textContent = '';
         }
     </script>
 
