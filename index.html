@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa de Dados do Google Sheets</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            padding: 12px;
+            font-size: 16px;
+            width: 220px;
+            margin: 0 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            color: #333;
+            transition: border-color 0.3s;
+        }
+        .search-input:focus {
+            border-color: #66cc66;
+            outline: none;
+        }
+        .search-button, .clear-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 5px;
+        }
+        .search-button {
+            background-color: #66cc66;
+            color: white;
+        }
+        .search-button:hover {
+            background-color: #55bb55;
+        }
+        .clear-button {
+            background-color: #ff6666;
+            color: white;
+        }
+        .clear-button:hover {
+            background-color: #ff5555;
+        }
+        .result-container {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .result-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 10px;
+            width: 280px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            transition: transform 0.3s;
+        }
+        .result-box:hover {
+            transform: translateY(-2px);
+        }
+        .result-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #333;
+            font-size: 1.2rem;
+        }
+        .highlight {
+            background-color: #ccffcc;
+            border: 1px solid #66cc66;
+            box-shadow: 0 0 10px rgba(102, 204, 102, 0.5);
+        }
+        .error-message {
+            color: #ff4c4c;
+            text-align: center;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pesquisa de Dados de Status de Inscrição</h1>
+
+    <div class="search-container">
+        <input type="text" id="name" class="search-input" placeholder="Nome" onkeypress="checkEnter(event)">
+        <input type="text" id="cpf" class="search-input" placeholder="CPF" onkeypress="checkEnter(event)">
+        <button class="search-button" onclick="searchData()">Buscar</button>
+        <button class="clear-button" onclick="clearFields()">Limpar</button>
+    </div>
+
+    <div id="error" class="error-message"></div>
+
+    <div id="result" class="result-container">
+        <!-- Os dados da pesquisa serão inseridos aqui -->
+    </div>
+
+    <script>
+        const apiKey = 'AIzaSyCpfGDekqRqfeY7PTy9OcpJ6P9uX2lJla8';
+        const sheetId = '1FkhYLzqPSDU-8R6YCC70XqyEu_irZxPrqmUMAkgwExg';
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/BANCO DE DADOS?key=${apiKey}`;
+
+        function searchData() {
+            const name = document.getElementById('name').value.trim().toLowerCase();
+            const cpf = document.getElementById('cpf').value.trim();
+            const resultContainer = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+
+            errorDiv.textContent = '';
+            resultContainer.innerHTML = '';
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro na resposta da API');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const rows = data.values || [];
+                    const results = [];
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        const candidateName = row[2] ? row[2].toLowerCase() : '';
+                        const candidateCpf = row[3];
+
+                        if ((name && candidateName.includes(name)) || (cpf && candidateCpf === cpf)) {
+                            results.push({
+                                nome: row[2],
+                                cpf: candidateCpf,
+                                ies: row[18],
+                                curso: row[0],
+                                statusFinanciamento: row[7],
+                                turno: row[1], // Data Limite CPSA
+                                notaENEM: row[4],
+                                modalidade: row[17],
+                                tipoFIES: row[19],
+                                preSelecionado: row[7] === 'Pré-Selecionado',
+                                statusAtual: row[8], // Status Atual do Financiamento
+                                dataLimiteCPSA: row[11] // Data Limite CPSA
+
+                            });
+                        }
+                    }
+
+                    if (results.length > 0) {
+                        results.sort((a, b) => b.preSelecionado - a.preSelecionado);
+
+                        results.forEach(result => {
+                            const boxClass = result.preSelecionado ? 'result-box highlight' : 'result-box';
+                            resultContainer.innerHTML += `
+                                <div class="${boxClass}">
+                                    <div class="result-title">Resultado</div>
+                                    <p><strong>Nome:</strong> ${result.nome}</p>
+                                    <p><strong>CPF:</strong> ${result.cpf}</p>
+                                    <p><strong>IES:</strong> ${result.ies}</p>
+                                    <p><strong>Curso:</strong> ${result.curso}</p>
+                                    <p><strong>Status do Financiamento:</strong> ${result.statusFinanciamento}</p>
+                                    <p><strong>Turno:</strong> ${result.turno}</p>
+                                    <p><strong>Nota do ENEM:</strong> ${result.notaENEM}</p>
+                                    <p><strong>Modalidade:</strong> ${result.modalidade}</p>
+                                    <p><strong>Tipo FIES:</strong> ${result.tipoFIES}</p>
+                                    ${result.preSelecionado ? `
+                                        <p><strong>Status Atual:</strong> ${result.statusAtual}</p>
+                                        <p><strong>Data Limite CPSA:</strong> ${result.dataLimiteCPSA}</p>
+                                    ` : ''}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        errorDiv.textContent = "Nenhum dado encontrado. Verifique a pesquisa.";
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar dados:', error);
+                    errorDiv.textContent = "Erro ao carregar os dados. Tente novamente mais tarde.";
+                });
+        }
+
+        function clearFields() {
+            document.getElementById('name').value = '';
+            document.getElementById('cpf').value = '';
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('error').textContent = '';
+        }
+
+        function checkEnter(event) {
+            if (event.key === 'Enter') {
+                searchData();
+            }
+        }
+    </script>
+
+</body>
+</html>
